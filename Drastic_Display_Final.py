@@ -172,8 +172,7 @@ def fetch_poster(url):
 def display_info(media_item):
     """
     Display information about a media item on the screen, including fanart as the background.
-    A semi-transparent overlay is added for readability, and text has a shadow effect.
-    Only the first 5 lines of the description are displayed.
+    If the item is currently playing, display user and play status (Transcoding or Direct Play).
     """
     screen.fill((0, 0, 0))  # Clear screen
 
@@ -205,41 +204,31 @@ def display_info(media_item):
     screen.blit(title_shadow, (300 + shadow_offset, 90 + shadow_offset))  # Position shadow
     screen.blit(title_text, (300, 90))  # Position the title text
 
-    # Ensure the description is not None; if None, use an empty string or a fallback message
+    # Ensure the description is not None
     description = media_item.get('description', "No description available") or "No description available"
-    
-    # Wrap the description text into lines
+
+    # Wrap and display description text
     description_lines = wrap_text(description, font, 500)
+    description_lines = description_lines[:5]  # Limit to first 5 lines
 
-    # Limit the number of lines to the first 5
-    description_lines = description_lines[:5]
-
-    # Display description (wrapped to fit the screen)
     y_position = 140
     for line in description_lines:
-        # Render text and its shadow using the correct font size
         description_text = font.render(line, True, (255, 255, 255))
-        description_shadow = font.render(line, True, (0, 0, 0))  # Black shadow
-        screen.blit(description_shadow, (300 + shadow_offset, y_position + shadow_offset))
         screen.blit(description_text, (300, y_position))
-        y_position += 30  # Move the next line down
+        y_position += 30
 
-    # Check if the item is a TV show and display season/episode count if available
-    if media_item.get('seasons') is not None and media_item.get('episodes') is not None:
-        seasons_text = font.render(f"Seasons: {media_item['seasons']}", True, (255, 255, 255))
-        episodes_text = font.render(f"Episodes: {media_item['episodes']}", True, (255, 255, 255))
-        screen.blit(seasons_text, (300, y_position + 20))
-        screen.blit(episodes_text, (300, y_position + 50))
-        y_position += 80  # Move the next section down if seasons/episodes are displayed
+    # Check if this media item is from the currently playing list
+    if 'user' in media_item and 'transcode' in media_item:
+        # Display user and play status (Transcoding or Direct Play) only if currently playing
+        user_text = font.render(f"User: {media_item.get('user', 'Unknown User')}", True, (255, 255, 255))
+        transcode_text = font.render(f"Status: {media_item.get('transcode', 'Error')}", True, (255, 255, 255))
 
-    # Display user and play status (Transcoding or Direct Play)
-    user_text = font.render(f"User: {media_item['user']}", True, (255, 255, 255))
-    transcode_text = font.render(f"Status: {media_item['transcode']}", True, (255, 255, 255))
-    
-    screen.blit(user_text, (300, y_position + 20))  # Position the user text
-    screen.blit(transcode_text, (300, y_position + 50))  # Position the play status text
+        screen.blit(user_text, (300, y_position + 20))  # Position the user text
+        screen.blit(transcode_text, (300, y_position + 50))  # Position the play status text
 
     pygame.display.update()
+
+
 
 
 def wrap_text(text, font, max_width):
