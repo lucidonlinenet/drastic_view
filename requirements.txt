@@ -1,0 +1,5 @@
+pygame==2.1.0
+requests==2.31.0
+Pillow==9.2.0
+plexapi==4.8.0
+pygetwindow==0.0.9
