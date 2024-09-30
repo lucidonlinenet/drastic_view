@@ -9,6 +9,10 @@ from PIL import Image
 from datetime import datetime, timedelta
 import pygetwindow as gw
 import os
+import ctypes
+
+# Load Windows API functions from user32.dll
+user32 = ctypes.WinDLL('user32', use_last_error=True)
 
 # Load config from config.json
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
@@ -131,6 +135,18 @@ def get_last_added():
                 description = "Description not available"  # Fallback description
                 num_seasons = 0
                 num_episodes = 0
+
+            # Include the seasons and episodes in the media item
+            recently_added.append({
+                'title': title,
+                'poster_url': poster_url,
+                'fanart_url': fanart_url,
+                'description': description,
+                'seasons': num_seasons,
+                'episodes': num_episodes,
+                'type': 'show',  # Mark this as a show for display_info
+            })
+
         elif item.type == 'movie':
             # For movies, use the normal title and description
             title = item.title  # Movie title
@@ -139,21 +155,17 @@ def get_last_added():
             num_episodes = None  # No episodes for movies
             # Fanart URL for movies will be used as is (from artUrl)
 
-        # Transcode the poster image to a fixed size (optional, e.g., 200x300 pixels)
-        transcode_poster_url = plex.transcodeImage(poster_url, height=300, width=200)
-        transcode_fanart_url = plex.transcodeImage(fanart_url, height=480, width=800)  # Full screen size
+            # Append the movie item
+            recently_added.append({
+                'title': title,
+                'poster_url': poster_url,
+                'fanart_url': fanart_url,
+                'description': description,
+                'type': 'movie'  # Mark this as a movie for display_info
+            })
 
-        recently_added.append({
-            'title': title,  # Title can be either the show, season, or movie title
-            'poster_url': transcode_poster_url,  # Transcoded image URL for the poster
-            'fanart_url': transcode_fanart_url,  # Transcoded image URL for the background fanart
-            'description': description,  # Show, season, or movie description
-            'seasons': num_seasons,  # Number of seasons (None for movies)
-            'episodes': num_episodes  # Number of episodes (None for movies)
-        })
-    
-    print(f"Recently added items: {recently_added}")  # Log recently added items
     return recently_added
+
 
 
 def fetch_poster(url):
@@ -173,6 +185,7 @@ def display_info(media_item):
     """
     Display information about a media item on the screen, including fanart as the background.
     If the item is currently playing, display user and play status (Transcoding or Direct Play).
+    Also, display season and episode count for TV shows.
     """
     screen.fill((0, 0, 0))  # Clear screen
 
@@ -216,6 +229,17 @@ def display_info(media_item):
         description_text = font.render(line, True, (255, 255, 255))
         screen.blit(description_text, (300, y_position))
         y_position += 30
+
+    # Display season and episode count if it's a TV show or season
+    if media_item.get('type') in ['show', 'season']:
+        # Display the number of Seasons and Episodes
+        seasons_text = font.render(f"Seasons: {media_item.get('seasons', 'Unknown')}", True, (255, 255, 255))
+        episodes_text = font.render(f"Episodes: {media_item.get('episodes', 'Unknown')}", True, (255, 255, 255))
+
+        screen.blit(seasons_text, (300, y_position + 20))  # Position the seasons text
+        screen.blit(episodes_text, (300, y_position + 50))  # Position the episodes text
+
+        y_position += 80  # Adjust the position for the next elements
 
     # Check if this media item is from the currently playing list
     if 'user' in media_item and 'transcode' in media_item:
@@ -304,6 +328,31 @@ def display_time_and_info():
     # Update the Pygame display
     pygame.display.update()
 
+# Function to bring window to the front using Windows API
+def bring_window_to_front():
+    """
+    Bring the Pygame window to the front using the Windows API.
+    """
+    # Get all windows with the title 'Plex Now Playing'
+    windows = gw.getWindowsWithTitle('Plex Now Playing')
+    
+    if windows:
+        win = windows[0]  # Get the first matching window
+
+        if win.isMinimized:
+            win.restore()  # Restore the window if minimized
+
+        # Get the window handle (HWND)
+        hwnd = user32.FindWindowW(None, "Plex Now Playing")
+        
+        if hwnd:
+            # Bring the window to the front using SetForegroundWindow
+            user32.SetForegroundWindow(hwnd)
+            print("Window brought to the front using Windows API.")
+        else:
+            print("Failed to find window handle (HWND).")
+    else:
+        print("No window found with the title 'Plex Now Playing'.")
 
 def main_loop():
     """
@@ -312,13 +361,10 @@ def main_loop():
     """
     running = True
     while running:
+        bring_window_to_front()  # Bring the window to the front if minimized or in the background
+
         now_playing = get_currently_playing()
         media_to_display = now_playing if now_playing else get_last_added()
-
-        # Ensure the Pygame window is always maximized
-        win = gw.getWindowsWithTitle('Plex Now Playing')[0]  # Adjust the title accordingly
-        if win.isMinimized:  # Check if the window is minimized
-            win.restore()  # Restore the window if minimized
 
         # Iterate through media items (either currently playing or recently added)
         for media_item in media_to_display:
