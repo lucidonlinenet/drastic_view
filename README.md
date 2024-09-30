@@ -1,4 +1,4 @@
-Installation:
+Installation:<br><br>
 
 Download files to your machine
 Copy the config_sample.json file and rename to config.json
