@@ -1,0 +1,7 @@
+{
+  "PLEX_URL": "http://192.168.0.220:32400",
+  "PLEX_TOKEN": "ENTER_YOUR_PEX_TOKEN",
+  "DISPLAY_TIME": 10,
+  "NUM_RECENT_ITEMS": 5,
+  "TIME_FORMAT": "%Y-%m-%d %H:%M"
+}
