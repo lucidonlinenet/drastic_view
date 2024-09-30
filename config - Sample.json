@@ -3,5 +3,6 @@
   "PLEX_TOKEN": "ENTER_YOUR_PEX_TOKEN",
   "DISPLAY_TIME": 10,
   "NUM_RECENT_ITEMS": 5,
-  "TIME_FORMAT": "%Y-%m-%d %H:%M"
+  "TIME_FORMAT": "%Y-%m-%d %H:%M",
+  "SHOW_CLOCK": 1
 }

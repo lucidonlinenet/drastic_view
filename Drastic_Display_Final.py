@@ -5,7 +5,7 @@ from plexapi.server import PlexServer
 import time
 import io
 import json
-from PIL import Image
+from PIL import Image, ImageOps
 from datetime import datetime, timedelta
 import pygetwindow as gw
 import os
@@ -177,6 +177,10 @@ def fetch_poster(url):
     if response.status_code == 200:
         image_data = response.content
         image = Image.open(io.BytesIO(image_data))
+
+        # Resize with LANCZOS filter for better quality
+        image = image.resize((400, 600), Image.LANCZOS)
+
         return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
     return None
 
@@ -206,8 +210,10 @@ def display_info(media_item):
     # Fetch poster image
     poster = fetch_poster(media_item['poster_url'])
     if poster:
-        poster = pygame.transform.scale(poster, (200, 300))  # Scale the poster
+        # Resize the poster using a higher-quality resampling filter (LANCZOS)
+        poster = pygame.transform.scale(poster, (200, 300))
         screen.blit(poster, (50, 90))  # Position the poster on the screen
+
 
     # Display title text with shadow for better readability
     shadow_offset = 2  # Offset for shadow effect
@@ -379,9 +385,10 @@ def main_loop():
                     if event.key == pygame.K_ESCAPE:
                         running = False  # Exit loop on Esc key press
 
-        # After displaying all media items, show the centered time and smaller additional info together
-        display_time_and_info()  # Display large centered time and smaller additional info simultaneously
-        time.sleep(DISPLAY_TIME)  # Keep this info on screen for the defined time
+        if config['SHOW_CLOCK'] == 1:
+            # After displaying all media items, show the centered time and smaller additional info together
+            display_time_and_info()  # Display large centered time and smaller additional info simultaneously
+            time.sleep(DISPLAY_TIME)  # Keep this info on screen for the defined time
 
     pygame.quit()  # Clean up and close the window when exiting
 
