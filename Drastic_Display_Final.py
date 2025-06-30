@@ -173,16 +173,20 @@ def fetch_poster(url):
     Fetches the poster image from a given URL.
     Returns a Pygame image surface.
     """
-    response = requests.get(url, headers={'X-Plex-Token': PLEX_TOKEN})
-    if response.status_code == 200:
-        image_data = response.content
-        image = Image.open(io.BytesIO(image_data))
+    try:
+        response = requests.get(url, headers={'X-Plex-Token': PLEX_TOKEN})
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        print(f"Failed to fetch image: {exc}")
+        return None
 
-        # Resize with LANCZOS filter for better quality
-        image = image.resize((400, 600), Image.LANCZOS)
+    image_data = response.content
+    image = Image.open(io.BytesIO(image_data))
 
-        return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
-    return None
+    # Resize with LANCZOS filter for better quality
+    image = image.resize((400, 600), Image.LANCZOS)
+
+    return pygame.image.fromstring(image.tobytes(), image.size, image.mode)
 
 
 def display_info(media_item):
@@ -277,7 +281,8 @@ def wrap_text(text, font, max_width):
         if font.size(test_line)[0] < max_width:
             current_line = test_line
         else:
-            lines.append(current_line)
+            if current_line:
+                lines.append(current_line)
             current_line = word + " "
 
     if current_line:
